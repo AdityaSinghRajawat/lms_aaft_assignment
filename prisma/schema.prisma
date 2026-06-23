@@ -1,0 +1,124 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Mini LMS — Prisma schema
+// Models: User (admin + student via role), Course, Lesson, Enrollment,
+//         VideoProgress
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+// users (admins and students) ────────────────────────────────────────────────
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String // bcrypt hash
+  role      Role     @default(STUDENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // relations
+  enrollments      Enrollment[]    @relation("StudentEnrollments")
+  assignedCourses  Enrollment[]    @relation("AssignedByAdmin")
+  videoProgress    VideoProgress[]
+
+  @@index([role])
+  @@index([email])
+  @@map("users")
+}
+
+// courses ─────────────────────────────────────────────────────────────────────
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  isPublished Boolean  @default(true) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // relations
+  lessons       Lesson[]
+  enrollments   Enrollment[]
+  videoProgress VideoProgress[]
+
+  @@index([title])
+  @@map("courses")
+}
+
+// lessons (video lessons that belong to a course) ──────────────────────────────
+model Lesson {
+  id          String   @id @default(uuid())
+  courseId    String   @map("course_id")
+  title       String
+  description String?
+  videoUrl    String   @map("video_url")
+  duration    Int      @default(0) // total length in seconds
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // relations
+  course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  videoProgress VideoProgress[]
+
+  @@index([courseId])
+  @@map("lessons")
+}
+
+// enrollments (course assignment of a student) ─────────────────────────────────
+model Enrollment {
+  id           String   @id @default(uuid())
+  studentId    String   @map("student_id")
+  courseId     String   @map("course_id")
+  assignedById String?  @map("assigned_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // relations
+  student    User    @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  assignedBy User?   @relation("AssignedByAdmin", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+  @@map("enrollments")
+}
+
+// video_progress (per student, per lesson) ─────────────────────────────────────
+model VideoProgress {
+  id                  String    @id @default(uuid())
+  studentId           String    @map("student_id")
+  lessonId            String    @map("lesson_id")
+  courseId            String    @map("course_id") // denormalised for efficient course-level reports
+  lastPositionSeconds Int       @default(0) @map("last_position_seconds") // resume point
+  percentage          Float     @default(0) // 0–100
+  completed           Boolean   @default(false)
+  timeSpentSeconds    Int       @default(0) @map("time_spent_seconds")
+  completedAt         DateTime? @map("completed_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // relations
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([lessonId])
+  @@index([courseId])
+  @@map("video_progress")
+}
