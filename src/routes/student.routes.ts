@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { studentCoursesController } from '../controllers/studentCourses.controller';
-import { progressController } from '../controllers/progress.controller';
+import * as studentCoursesController from '../controllers/studentCourses.controller';
+import * as progressController from '../controllers/progress.controller';
 import { validate } from '../middlewares/validate.middleware';
 import { authenticate, requireStudent } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';

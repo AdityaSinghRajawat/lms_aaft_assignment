@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { lessonsController } from '../controllers/lessons.controller';
+import * as lessonsController from '../controllers/lessons.controller';
 import { validate } from '../middlewares/validate.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import {

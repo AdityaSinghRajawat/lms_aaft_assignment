@@ -1,4 +1,4 @@
-import { resolvePagination, buildPaginationMeta } from '../src/utils/pagination';
+import { resolvePagination, buildPaginationMeta } from '../../../src/utils/pagination';
 
 describe('pagination util', () => {
   describe('resolvePagination', () => {

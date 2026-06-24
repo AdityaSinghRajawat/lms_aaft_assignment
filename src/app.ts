@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env';
-import { swaggerSpec } from './config/swagger';
+import { swaggerSpec } from './swagger';
 import apiRouter from './routes';
 import { requestLogger } from './middlewares/requestLogger.middleware';
 import { notFoundHandler } from './middlewares/notFound.middleware';

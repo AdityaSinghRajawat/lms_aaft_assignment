@@ -3,7 +3,7 @@ import {
   resolveCompletion,
   summariseCourseProgress,
   COMPLETION_THRESHOLD_PERCENT,
-} from '../src/helpers/progress.helper';
+} from '../../../src/helpers/progress.helper';
 
 describe('progress.helper', () => {
   describe('clampPercentage', () => {
@@ -26,7 +26,7 @@ describe('progress.helper', () => {
 
     it('honours an explicit completed flag', () => {
       expect(resolveCompletion(10, true)).toBe(true);
-      expect(resolveCompletion(95, false)).toBe(true); // threshold still wins on >=90
+      expect(resolveCompletion(95, false)).toBe(true);
     });
   });
 

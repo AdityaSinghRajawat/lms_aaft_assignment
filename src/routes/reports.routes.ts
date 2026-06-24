@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { reportsController } from '../controllers/reports.controller';
+import * as reportsController from '../controllers/reports.controller';
 import { validate } from '../middlewares/validate.middleware';
 import { authenticate, requireAdmin } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';

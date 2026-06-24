@@ -40,33 +40,47 @@ route → controller → service → repository → (Prisma) → PostgreSQL
 | **route**      | Registers path/method + middleware; calls the controller only            |
 | **controller** | Parses request, calls service, formats response — *zero* business logic   |
 | **service**    | Owns all business logic; orchestrates repositories/helpers/utils          |
-| **repository** | Prisma queries only; returns models; *zero* business logic                |
+| **repository** | Prisma queries only; returns Prisma models; *zero* business logic         |
 | **middleware** | Auth, validation, error handling — standalone, never inside controllers   |
 | **helpers**    | Reusable, domain-specific logic (password, JWT, progress maths)           |
 | **utils**      | Generic stateless utilities (logger, response formatter, pagination)      |
+
+> **No models layer.** Because Prisma generates entity types directly from
+> `schema.prisma`, there is no hand-written ORM-model layer. Plain TypeScript
+> DTOs/interfaces live in `types/` with a `.types.ts` suffix.
+
+### Export & import convention
+
+Every service, repository, controller and helper defines **standalone named
+functions** and exports them in a single block at the bottom of the file
+(`export { login, getProfile }`). Consumers use namespace imports
+(`import * as authService from '...'`) so call sites stay readable
+(`authService.login(...)`) while each unit remains independently mockable.
 
 ### Folder structure
 
 ```
 src/
-├── config/         # env (validated), db (Prisma client), swagger spec
+├── config/         # env (validated), db (Prisma client)
 ├── routes/         # REST route definitions per resource
 ├── controllers/    # request/response handling per resource
 ├── services/       # business logic per resource
 ├── repositories/   # Prisma DB calls per resource
 ├── middlewares/    # auth, validate, error, notFound, requestLogger
-├── models/         # TypeScript interfaces/DTOs (PascalCase types)
 ├── validations/    # Joi schemas per resource
-├── helpers/        # reusable domain logic
-├── utils/          # generic stateless utilities
-├── types/          # shared TS types + Express augmentation
+├── swagger/        # OpenAPI route docs — one *.swagger.ts file per route module
+├── helpers/        # reusable domain logic (password, jwt, progress, user)
+├── utils/          # generic stateless utilities (logger, response, pagination, collection)
+├── types/          # TS DTOs/interfaces (*.types.ts) + shared types + Express augmentation
 ├── app.ts          # Express app assembly
 └── server.ts       # bootstrap: DB connect + listen + graceful shutdown
 prisma/
 ├── schema.prisma
 ├── migrations/
 └── seed.ts
-tests/              # Jest unit tests
+tests/
+├── unit/           # mirrors src/ 1:1 (helpers/, utils/, services/, …)
+└── integration/    # API-level tests organised by route module
 ```
 
 ---
@@ -381,8 +395,18 @@ erDiagram
 - **Strict layering, dependency flows down only.** Controllers never touch Prisma;
   repositories never contain business rules. This keeps business logic testable and
   the data layer swappable.
+- **Functional modules over method-objects.** Each unit is a set of standalone named
+  functions exported in one block; consumers namespace-import them. This keeps
+  functions single-responsibility and individually mockable.
+- **Module-level dependency injection.** Rather than a DI container, dependencies are
+  injected at the module boundary: a unit imports the modules it needs, and tests swap
+  them with `jest.mock(...)` (see `tests/unit/services/auth.service.test.ts`). This
+  fits the functional export style while keeping units isolated under test.
 - **Single shared Prisma client** (`config/db.ts`) to reuse the connection pool and
   avoid exhausting database connections.
+- **API docs live beside the code they describe.** Route documentation is split into
+  one `*.swagger.ts` file per route module under `swagger/`; `swagger/index.ts` holds
+  the base spec (info, servers, security) and merges the modules into the served document.
 - **Centralised error handling.** Services throw a typed `ApiError`; one middleware
   translates `ApiError`, Prisma errors (`P2002` → 409, `P2025` → 404, `P2003` → 400)
   and unknowns into the consistent error envelope. Production hides internal messages.

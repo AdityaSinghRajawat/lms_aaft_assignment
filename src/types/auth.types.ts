@@ -1,4 +1,4 @@
-import { SafeUser } from './user.model';
+import { SafeUser } from './user.types';
 
 export interface LoginInput {
   email: string;

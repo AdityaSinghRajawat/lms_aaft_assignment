@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { enrollmentsController } from '../controllers/enrollments.controller';
+import * as enrollmentsController from '../controllers/enrollments.controller';
 import { validate } from '../middlewares/validate.middleware';
 import { authenticate, requireAdmin } from '../middlewares/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';

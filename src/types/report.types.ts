@@ -1,4 +1,3 @@
-/** Per-course progress block within a student report. */
 export interface StudentCourseProgress {
   courseId: string;
   courseTitle: string;
@@ -9,7 +8,6 @@ export interface StudentCourseProgress {
   totalTimeSpentSeconds: number;
 }
 
-/** Student-wise progress report across all assigned courses. */
 export interface StudentProgressReport {
   student: {
     id: string;
@@ -26,7 +24,6 @@ export interface StudentProgressReport {
   courses: StudentCourseProgress[];
 }
 
-/** Per-student row within a course-wise report. */
 export interface CourseStudentProgress {
   studentId: string;
   studentName: string;
@@ -37,7 +34,6 @@ export interface CourseStudentProgress {
   isCompleted: boolean;
 }
 
-/** Course-wise completion report across all enrolled students. */
 export interface CourseProgressReport {
   course: {
     id: string;
