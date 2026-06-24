@@ -1,12 +1,13 @@
 import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import { BCRYPT } from '../src/constants/security.constants';
 
 dotenv.config();
 
 const prisma = new PrismaClient();
 
-const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS ?? 10);
+const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS ?? BCRYPT.DEFAULT_SALT_ROUNDS);
 const ADMIN_NAME = process.env.SEED_ADMIN_NAME ?? 'Super Admin';
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'admin@lms.test';
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@123';

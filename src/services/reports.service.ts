@@ -3,15 +3,11 @@ import * as usersRepository from '../repositories/users.repository';
 import * as enrollmentsRepository from '../repositories/enrollments.repository';
 import * as videoProgressRepository from '../repositories/videoProgress.repository';
 import * as coursesRepository from '../repositories/courses.repository';
+import { toStudentProgressReport, toCourseProgressReport } from '../serializers/report.serializer';
 import { ApiError } from '../utils/apiError';
 import { groupBy } from '../utils/collection';
-import { roundTo, summariseCourseProgress } from '../helpers/progress.helper';
-import {
-  CourseProgressReport,
-  CourseStudentProgress,
-  StudentCourseProgress,
-  StudentProgressReport,
-} from '../types/report.types';
+import { summariseCourseProgress } from '../helpers/progress.helper';
+import { CourseProgressReport, StudentProgressReport } from '../types/report.types';
 
 async function studentProgress(studentId: string): Promise<StudentProgressReport> {
   const student = await usersRepository.findByIdAndRole(studentId, Role.STUDENT);
@@ -24,35 +20,15 @@ async function studentProgress(studentId: string): Promise<StudentProgressReport
 
   const rowsByCourse = groupBy(progressRows, (r) => r.courseId);
 
-  const courses: StudentCourseProgress[] = enrollments.map((e) => {
-    const rows = rowsByCourse.get(e.courseId) ?? [];
-    const summary = summariseCourseProgress(e.course._count.lessons, rows);
-    return {
-      courseId: e.course.id,
-      courseTitle: e.course.title,
-      totalLessons: summary.totalLessons,
-      completedLessons: summary.completedLessons,
-      startedLessons: summary.startedLessons,
-      completionPercentage: summary.completionPercentage,
-      totalTimeSpentSeconds: summary.totalTimeSpentSeconds,
-    };
-  });
+  const courses = enrollments.map((e) => ({
+    course: { id: e.course.id, title: e.course.title },
+    summary: summariseCourseProgress(e.course._count.lessons, rowsByCourse.get(e.courseId) ?? []),
+  }));
 
-  const totalLessons = courses.reduce((s, c) => s + c.totalLessons, 0);
-  const completedLessons = courses.reduce((s, c) => s + c.completedLessons, 0);
-  const totalTimeSpentSeconds = courses.reduce((s, c) => s + c.totalTimeSpentSeconds, 0);
-
-  return {
-    student: { id: student.id, name: student.name, email: student.email },
-    overall: {
-      totalCourses: courses.length,
-      totalLessons,
-      completedLessons,
-      completionPercentage: totalLessons > 0 ? roundTo((completedLessons / totalLessons) * 100, 2) : 0,
-      totalTimeSpentSeconds,
-    },
+  return toStudentProgressReport(
+    { id: student.id, name: student.name, email: student.email },
     courses,
-  };
+  );
 }
 
 async function courseProgress(courseId: string): Promise<CourseProgressReport> {
@@ -67,37 +43,12 @@ async function courseProgress(courseId: string): Promise<CourseProgressReport> {
 
   const rowsByStudent = groupBy(progressRows, (r) => r.studentId);
 
-  const students: CourseStudentProgress[] = enrollments.map((e) => {
-    const rows = rowsByStudent.get(e.studentId) ?? [];
-    const summary = summariseCourseProgress(totalLessons, rows);
-    return {
-      studentId: e.student.id,
-      studentName: e.student.name,
-      studentEmail: e.student.email,
-      completedLessons: summary.completedLessons,
-      completionPercentage: summary.completionPercentage,
-      totalTimeSpentSeconds: summary.totalTimeSpentSeconds,
-      isCompleted: totalLessons > 0 && summary.completedLessons === totalLessons,
-    };
-  });
+  const students = enrollments.map((e) => ({
+    student: e.student,
+    summary: summariseCourseProgress(totalLessons, rowsByStudent.get(e.studentId) ?? []),
+  }));
 
-  const studentsCompleted = students.filter((s) => s.isCompleted).length;
-  const totalTimeSpentSeconds = students.reduce((s, st) => s + st.totalTimeSpentSeconds, 0);
-  const averageCompletionPercentage =
-    students.length > 0
-      ? roundTo(students.reduce((s, st) => s + st.completionPercentage, 0) / students.length, 2)
-      : 0;
-
-  return {
-    course: { id: course.id, title: course.title, totalLessons },
-    summary: {
-      totalStudents: students.length,
-      studentsCompleted,
-      averageCompletionPercentage,
-      totalTimeSpentSeconds,
-    },
-    students,
-  };
+  return toCourseProgressReport({ id: course.id, title: course.title }, totalLessons, students);
 }
 
 export { studentProgress, courseProgress };

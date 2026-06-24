@@ -21,6 +21,7 @@ const baseUser: User = {
   isActive: true,
   createdAt: new Date(0),
   updatedAt: new Date(0),
+  deletedAt: null,
 };
 
 const findByEmailMock = usersRepository.findByEmail as jest.Mock;

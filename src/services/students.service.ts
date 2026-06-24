@@ -1,7 +1,7 @@
 import { Role } from '@prisma/client';
 import * as usersRepository from '../repositories/users.repository';
 import { hashPassword } from '../helpers/password.helper';
-import { toSafeUser } from '../helpers/user.helper';
+import { toSafeUser, toSafeUsers } from '../serializers/user.serializer';
 import { ApiError } from '../utils/apiError';
 import { CreateStudentInput, SafeUser, UpdateStudentInput } from '../types/user.types';
 import { PaginationParams } from '../types/common';
@@ -30,7 +30,7 @@ async function listStudents(
     usersRepository.countByRole(Role.STUDENT, search),
   ]);
 
-  return { items: students.map(toSafeUser), totalItems };
+  return { items: toSafeUsers(students), totalItems };
 }
 
 async function getStudentById(id: string): Promise<SafeUser> {

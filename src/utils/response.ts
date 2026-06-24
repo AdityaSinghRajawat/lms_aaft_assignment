@@ -1,10 +1,7 @@
 import { Response } from 'express';
 import { PaginationMeta } from '../types/common';
+import { HTTP_STATUS } from '../constants/http.constants';
 
-/**
- * Consistent JSON response envelope used across every endpoint.
- * Generic + stateless — no domain knowledge.
- */
 export interface SuccessBody<T> {
   success: true;
   message: string;
@@ -18,11 +15,11 @@ export interface ErrorBody {
   errors?: unknown;
 }
 
-export function sendSuccess<T>(
+function sendSuccess<T>(
   res: Response,
   data: T,
   message = 'Success',
-  statusCode = 200,
+  statusCode: number = HTTP_STATUS.OK,
   meta?: PaginationMeta,
 ): Response<SuccessBody<T>> {
   const body: SuccessBody<T> = { success: true, message, data };
@@ -30,11 +27,11 @@ export function sendSuccess<T>(
   return res.status(statusCode).json(body);
 }
 
-export function sendCreated<T>(res: Response, data: T, message = 'Created'): Response<SuccessBody<T>> {
-  return sendSuccess(res, data, message, 201);
+function sendCreated<T>(res: Response, data: T, message = 'Created'): Response<SuccessBody<T>> {
+  return sendSuccess(res, data, message, HTTP_STATUS.CREATED);
 }
 
-export function sendError(
+function sendError(
   res: Response,
   statusCode: number,
   message: string,
@@ -44,3 +41,5 @@ export function sendError(
   if (errors !== undefined) body.errors = errors;
   return res.status(statusCode).json(body);
 }
+
+export { sendSuccess, sendCreated, sendError };

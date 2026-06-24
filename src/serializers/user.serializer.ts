@@ -6,4 +6,8 @@ function toSafeUser(user: User): SafeUser {
   return safe;
 }
 
-export { toSafeUser };
+function toSafeUsers(users: User[]): SafeUser[] {
+  return users.map(toSafeUser);
+}
+
+export { toSafeUser, toSafeUsers };

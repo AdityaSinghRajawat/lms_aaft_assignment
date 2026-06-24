@@ -3,7 +3,7 @@ import { prisma } from '../config/db';
 import { CreateUserData } from '../types/user.types';
 
 function buildRoleFilter(role: Role, search?: string): Prisma.UserWhereInput {
-  const where: Prisma.UserWhereInput = { role };
+  const where: Prisma.UserWhereInput = { role, deletedAt: null };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
@@ -14,15 +14,15 @@ function buildRoleFilter(role: Role, search?: string): Prisma.UserWhereInput {
 }
 
 function findById(id: string): Promise<User | null> {
-  return prisma.user.findUnique({ where: { id } });
+  return prisma.user.findFirst({ where: { id, deletedAt: null } });
 }
 
 function findByEmail(email: string): Promise<User | null> {
-  return prisma.user.findUnique({ where: { email } });
+  return prisma.user.findFirst({ where: { email, deletedAt: null } });
 }
 
 function findByIdAndRole(id: string, role: Role): Promise<User | null> {
-  return prisma.user.findFirst({ where: { id, role } });
+  return prisma.user.findFirst({ where: { id, role, deletedAt: null } });
 }
 
 function create(data: CreateUserData): Promise<User> {
@@ -34,7 +34,7 @@ function update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
 }
 
 function remove(id: string): Promise<User> {
-  return prisma.user.delete({ where: { id } });
+  return prisma.user.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
 function findManyByRole(role: Role, skip: number, take: number, search?: string): Promise<User[]> {

@@ -2,6 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 import { Role } from '@prisma/client';
 import { verifyToken } from '../helpers/jwt.helper';
 import { ApiError } from '../utils/apiError';
+import { JWT } from '../constants/jwt.constants';
+
+const BEARER_PREFIX = `${JWT.BEARER_SCHEME} `;
 
 /**
  * Authentication middleware — verifies the Bearer JWT and attaches
@@ -10,11 +13,11 @@ import { ApiError } from '../utils/apiError';
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
 
-  if (!header || !header.startsWith('Bearer ')) {
+  if (!header || !header.startsWith(BEARER_PREFIX)) {
     throw ApiError.unauthorized('Missing or malformed Authorization header');
   }
 
-  const token = header.slice('Bearer '.length).trim();
+  const token = header.slice(BEARER_PREFIX.length).trim();
   if (!token) throw ApiError.unauthorized('Missing bearer token');
 
   req.user = verifyToken(token);

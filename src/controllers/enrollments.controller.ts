@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as enrollmentsService from '../services/enrollments.service';
 import { sendSuccess, sendCreated } from '../utils/response';
 import { resolvePagination, buildPaginationMeta } from '../utils/pagination';
+import { HTTP_STATUS } from '../constants/http.constants';
 
 async function create(req: Request, res: Response): Promise<void> {
   const enrollment = await enrollmentsService.assignCourse(req.body, req.user!.sub);
@@ -17,7 +18,7 @@ async function list(req: Request, res: Response): Promise<void> {
     },
     pagination,
   );
-  sendSuccess(res, items, 'Enrollments fetched successfully', 200, buildPaginationMeta(totalItems, pagination));
+  sendSuccess(res, items, 'Enrollments fetched successfully', HTTP_STATUS.OK, buildPaginationMeta(totalItems, pagination));
 }
 
 async function remove(req: Request, res: Response): Promise<void> {

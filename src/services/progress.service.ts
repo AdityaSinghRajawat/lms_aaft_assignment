@@ -3,13 +3,10 @@ import * as videoProgressRepository from '../repositories/videoProgress.reposito
 import * as lessonsRepository from '../repositories/lessons.repository';
 import * as enrollmentsService from './enrollments.service';
 import * as coursesService from './courses.service';
+import { toCourseProgress } from '../serializers/progress.serializer';
 import { ApiError } from '../utils/apiError';
 import { UpsertProgressInput } from '../types/videoProgress.types';
-import {
-  clampPercentage,
-  resolveCompletion,
-  summariseCourseProgress,
-} from '../helpers/progress.helper';
+import { clampPercentage, resolveCompletion, summariseCourseProgress } from '../helpers/progress.helper';
 
 async function updateProgress(studentId: string, input: UpsertProgressInput): Promise<VideoProgress> {
   const lesson = await lessonsRepository.findById(input.lessonId);
@@ -51,22 +48,7 @@ async function getCourseProgress(studentId: string, courseId: string) {
   const rows = await videoProgressRepository.findManyByStudentAndCourse(studentId, courseId);
   const summary = summariseCourseProgress(course.lessons.length, rows);
 
-  const byLesson = new Map(rows.map((r) => [r.lessonId, r]));
-  const lessons = course.lessons.map((lesson) => {
-    const p = byLesson.get(lesson.id);
-    return {
-      lessonId: lesson.id,
-      title: lesson.title,
-      duration: lesson.duration,
-      percentage: p?.percentage ?? 0,
-      completed: p?.completed ?? false,
-      lastPositionSeconds: p?.lastPositionSeconds ?? 0,
-      timeSpentSeconds: p?.timeSpentSeconds ?? 0,
-      completedAt: p?.completedAt ?? null,
-    };
-  });
-
-  return { course: { id: course.id, title: course.title }, summary, lessons };
+  return toCourseProgress(course, rows, summary);
 }
 
 export { updateProgress, getLessonProgress, getCourseProgress };

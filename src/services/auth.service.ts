@@ -2,10 +2,12 @@ import { Role } from '@prisma/client';
 import * as usersRepository from '../repositories/users.repository';
 import { comparePassword } from '../helpers/password.helper';
 import { signToken } from '../helpers/jwt.helper';
-import { toSafeUser } from '../helpers/user.helper';
+import { toAuthResult } from '../serializers/auth.serializer';
+import { toSafeUser } from '../serializers/user.serializer';
 import { ApiError } from '../utils/apiError';
 import { env } from '../config/env';
 import { AuthResult, LoginInput } from '../types/auth.types';
+import { SafeUser } from '../types/user.types';
 
 async function login({ email, password }: LoginInput, expectedRole: Role): Promise<AuthResult> {
   const user = await usersRepository.findByEmail(email);
@@ -25,11 +27,10 @@ async function login({ email, password }: LoginInput, expectedRole: Role): Promi
   }
 
   const token = signToken({ sub: user.id, role: user.role, email: user.email });
-
-  return { token, expiresIn: env.jwtExpiresIn, user: toSafeUser(user) };
+  return toAuthResult(token, env.jwtExpiresIn, user);
 }
 
-async function getProfile(userId: string) {
+async function getProfile(userId: string): Promise<SafeUser> {
   const user = await usersRepository.findById(userId);
   if (!user) throw ApiError.notFound('User not found');
   return toSafeUser(user);

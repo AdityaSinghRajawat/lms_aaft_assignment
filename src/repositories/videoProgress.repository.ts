@@ -1,6 +1,8 @@
 import { VideoProgress } from '@prisma/client';
 import { prisma } from '../config/db';
 
+const notDeleted = { deletedAt: null };
+
 interface UpsertProgressData {
   lastPositionSeconds: number;
   percentage: number;
@@ -10,9 +12,7 @@ interface UpsertProgressData {
 }
 
 function findByStudentAndLesson(studentId: string, lessonId: string): Promise<VideoProgress | null> {
-  return prisma.videoProgress.findUnique({
-    where: { studentId_lessonId: { studentId, lessonId } },
-  });
+  return prisma.videoProgress.findFirst({ where: { studentId, lessonId, ...notDeleted } });
 }
 
 function upsert(
@@ -35,15 +35,15 @@ function upsert(
 }
 
 function findManyByStudentAndCourse(studentId: string, courseId: string): Promise<VideoProgress[]> {
-  return prisma.videoProgress.findMany({ where: { studentId, courseId } });
+  return prisma.videoProgress.findMany({ where: { studentId, courseId, ...notDeleted } });
 }
 
 function findManyByStudent(studentId: string): Promise<VideoProgress[]> {
-  return prisma.videoProgress.findMany({ where: { studentId } });
+  return prisma.videoProgress.findMany({ where: { studentId, ...notDeleted } });
 }
 
 function findManyByCourse(courseId: string): Promise<VideoProgress[]> {
-  return prisma.videoProgress.findMany({ where: { courseId } });
+  return prisma.videoProgress.findMany({ where: { courseId, ...notDeleted } });
 }
 
 export {

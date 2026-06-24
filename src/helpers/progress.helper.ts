@@ -1,14 +1,14 @@
-/** A video is considered complete once at least this fraction is watched. */
-const COMPLETION_THRESHOLD_PERCENT = 90;
+import { PROGRESS } from '../constants/progress.constants';
+import { roundTo } from '../utils/number';
 
 function clampPercentage(value: number): number {
-  if (Number.isNaN(value)) return 0;
-  return Math.min(Math.max(value, 0), 100);
+  if (Number.isNaN(value)) return PROGRESS.MIN_PERCENT;
+  return Math.min(Math.max(value, PROGRESS.MIN_PERCENT), PROGRESS.MAX_PERCENT);
 }
 
 function resolveCompletion(percentage: number, explicit?: boolean): boolean {
   if (explicit === true) return true;
-  return percentage >= COMPLETION_THRESHOLD_PERCENT;
+  return percentage >= PROGRESS.COMPLETION_THRESHOLD_PERCENT;
 }
 
 export interface CourseProgressSummary {
@@ -38,15 +38,4 @@ function summariseCourseProgress(
   };
 }
 
-function roundTo(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
-
-export {
-  COMPLETION_THRESHOLD_PERCENT,
-  clampPercentage,
-  resolveCompletion,
-  summariseCourseProgress,
-  roundTo,
-};
+export { clampPercentage, resolveCompletion, summariseCourseProgress };

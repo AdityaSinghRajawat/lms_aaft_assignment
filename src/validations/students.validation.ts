@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { passwordRule } from './common.validation';
+import { passwordRule, paginationQuerySchema } from './common.validation';
 
 export const createStudentSchema = Joi.object({
   name: Joi.string().trim().min(2).max(120).required(),
@@ -16,8 +16,6 @@ export const updateStudentSchema = Joi.object({
   .min(1)
   .messages({ 'object.min': 'At least one field must be provided to update' });
 
-export const listStudentsQuerySchema = Joi.object({
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+export const listStudentsQuerySchema = paginationQuerySchema.keys({
   search: Joi.string().trim().max(120).allow('').optional(),
 });

@@ -2,6 +2,7 @@ import * as enrollmentsRepository from '../repositories/enrollments.repository';
 import * as coursesRepository from '../repositories/courses.repository';
 import * as lessonsRepository from '../repositories/lessons.repository';
 import * as enrollmentsService from './enrollments.service';
+import { toAssignedCourses } from '../serializers/enrollment.serializer';
 import { ApiError } from '../utils/apiError';
 import { PaginationParams } from '../types/common';
 
@@ -11,21 +12,7 @@ async function listAssignedCourses(studentId: string, pagination: PaginationPara
     enrollmentsRepository.countByStudent(studentId),
   ]);
 
-  const items = enrollments.map((e) => ({
-    enrollmentId: e.id,
-    assignedAt: e.createdAt,
-    course: {
-      id: e.course.id,
-      title: e.course.title,
-      description: e.course.description,
-      isPublished: e.course.isPublished,
-      totalLessons: e.course._count.lessons,
-      createdAt: e.course.createdAt,
-      updatedAt: e.course.updatedAt,
-    },
-  }));
-
-  return { items, totalItems };
+  return { items: toAssignedCourses(enrollments), totalItems };
 }
 
 async function getAssignedCourseDetail(studentId: string, courseId: string) {

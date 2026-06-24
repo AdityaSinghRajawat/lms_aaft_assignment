@@ -11,6 +11,7 @@ CREATE TABLE "users" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -23,6 +24,7 @@ CREATE TABLE "courses" (
     "is_published" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "courses_pkey" PRIMARY KEY ("id")
 );
@@ -38,6 +40,7 @@ CREATE TABLE "lessons" (
     "sort_order" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "lessons_pkey" PRIMARY KEY ("id")
 );
@@ -50,6 +53,7 @@ CREATE TABLE "enrollments" (
     "assigned_by_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "enrollments_pkey" PRIMARY KEY ("id")
 );
@@ -67,6 +71,7 @@ CREATE TABLE "video_progress" (
     "completed_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "video_progress_pkey" PRIMARY KEY ("id")
 );
@@ -81,16 +86,28 @@ CREATE INDEX "users_role_idx" ON "users"("role");
 CREATE INDEX "users_email_idx" ON "users"("email");
 
 -- CreateIndex
+CREATE INDEX "users_deleted_at_idx" ON "users"("deleted_at");
+
+-- CreateIndex
 CREATE INDEX "courses_title_idx" ON "courses"("title");
 
 -- CreateIndex
+CREATE INDEX "courses_deleted_at_idx" ON "courses"("deleted_at");
+
+-- CreateIndex
 CREATE INDEX "lessons_course_id_idx" ON "lessons"("course_id");
+
+-- CreateIndex
+CREATE INDEX "lessons_deleted_at_idx" ON "lessons"("deleted_at");
 
 -- CreateIndex
 CREATE INDEX "enrollments_student_id_idx" ON "enrollments"("student_id");
 
 -- CreateIndex
 CREATE INDEX "enrollments_course_id_idx" ON "enrollments"("course_id");
+
+-- CreateIndex
+CREATE INDEX "enrollments_deleted_at_idx" ON "enrollments"("deleted_at");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "enrollments_student_id_course_id_key" ON "enrollments"("student_id", "course_id");
@@ -103,6 +120,9 @@ CREATE INDEX "video_progress_lesson_id_idx" ON "video_progress"("lesson_id");
 
 -- CreateIndex
 CREATE INDEX "video_progress_course_id_idx" ON "video_progress"("course_id");
+
+-- CreateIndex
+CREATE INDEX "video_progress_deleted_at_idx" ON "video_progress"("deleted_at");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "video_progress_student_id_lesson_id_key" ON "video_progress"("student_id", "lesson_id");

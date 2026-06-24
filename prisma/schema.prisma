@@ -2,6 +2,10 @@
 // Mini LMS — Prisma schema
 // Models: User (admin + student via role), Course, Lesson, Enrollment,
 //         VideoProgress
+//
+// Soft delete: every table carries a nullable `deletedAt`. Deletions set this
+// timestamp instead of removing rows; the repository layer filters
+// `deletedAt: null` on every read (see repositories/* and README).
 // ─────────────────────────────────────────────────────────────────────────────
 
 generator client {
@@ -20,33 +24,36 @@ enum Role {
 
 // users (admins and students) ────────────────────────────────────────────────
 model User {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
-  email     String   @unique
+  email     String    @unique
   password  String // bcrypt hash
-  role      Role     @default(STUDENT)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  role      Role      @default(STUDENT)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   // relations
-  enrollments      Enrollment[]    @relation("StudentEnrollments")
-  assignedCourses  Enrollment[]    @relation("AssignedByAdmin")
-  videoProgress    VideoProgress[]
+  enrollments     Enrollment[]    @relation("StudentEnrollments")
+  assignedCourses Enrollment[]    @relation("AssignedByAdmin")
+  videoProgress   VideoProgress[]
 
   @@index([role])
   @@index([email])
+  @@index([deletedAt])
   @@map("users")
 }
 
 // courses ─────────────────────────────────────────────────────────────────────
 model Course {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   description String?
-  isPublished Boolean  @default(true) @map("is_published")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  isPublished Boolean   @default(true) @map("is_published")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
 
   // relations
   lessons       Lesson[]
@@ -54,46 +61,51 @@ model Course {
   videoProgress VideoProgress[]
 
   @@index([title])
+  @@index([deletedAt])
   @@map("courses")
 }
 
 // lessons (video lessons that belong to a course) ──────────────────────────────
 model Lesson {
-  id          String   @id @default(uuid())
-  courseId    String   @map("course_id")
+  id          String    @id @default(uuid())
+  courseId    String    @map("course_id")
   title       String
   description String?
-  videoUrl    String   @map("video_url")
-  duration    Int      @default(0) // total length in seconds
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  videoUrl    String    @map("video_url")
+  duration    Int       @default(0) // total length in seconds
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
 
   // relations
   course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
   videoProgress VideoProgress[]
 
   @@index([courseId])
+  @@index([deletedAt])
   @@map("lessons")
 }
 
 // enrollments (course assignment of a student) ─────────────────────────────────
 model Enrollment {
-  id           String   @id @default(uuid())
-  studentId    String   @map("student_id")
-  courseId     String   @map("course_id")
-  assignedById String?  @map("assigned_by_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id           String    @id @default(uuid())
+  studentId    String    @map("student_id")
+  courseId     String    @map("course_id")
+  assignedById String?   @map("assigned_by_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   // relations
-  student    User    @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
-  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  assignedBy User?   @relation("AssignedByAdmin", fields: [assignedById], references: [id], onDelete: SetNull)
+  student    User   @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  assignedBy User?  @relation("AssignedByAdmin", fields: [assignedById], references: [id], onDelete: SetNull)
 
   @@unique([studentId, courseId])
   @@index([studentId])
   @@index([courseId])
+  @@index([deletedAt])
   @@map("enrollments")
 }
 
@@ -110,6 +122,7 @@ model VideoProgress {
   completedAt         DateTime? @map("completed_at")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
 
   // relations
   student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -120,5 +133,6 @@ model VideoProgress {
   @@index([studentId])
   @@index([lessonId])
   @@index([courseId])
+  @@index([deletedAt])
   @@map("video_progress")
 }

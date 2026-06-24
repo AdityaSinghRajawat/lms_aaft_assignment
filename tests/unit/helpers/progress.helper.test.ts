@@ -2,8 +2,8 @@ import {
   clampPercentage,
   resolveCompletion,
   summariseCourseProgress,
-  COMPLETION_THRESHOLD_PERCENT,
 } from '../../../src/helpers/progress.helper';
+import { PROGRESS } from '../../../src/constants/progress.constants';
 
 describe('progress.helper', () => {
   describe('clampPercentage', () => {
@@ -20,7 +20,7 @@ describe('progress.helper', () => {
 
   describe('resolveCompletion', () => {
     it('auto-completes at the 90% threshold', () => {
-      expect(resolveCompletion(COMPLETION_THRESHOLD_PERCENT)).toBe(true);
+      expect(resolveCompletion(PROGRESS.COMPLETION_THRESHOLD_PERCENT)).toBe(true);
       expect(resolveCompletion(89.9)).toBe(false);
     });
 

@@ -62,15 +62,17 @@ functions** and exports them in a single block at the bottom of the file
 ```
 src/
 ├── config/         # env (validated), db (Prisma client)
+├── constants/      # typed app constants, one file per concern (http, pagination, jwt, …)
 ├── routes/         # REST route definitions per resource
 ├── controllers/    # request/response handling per resource
 ├── services/       # business logic per resource
-├── repositories/   # Prisma DB calls per resource
+├── repositories/   # Prisma DB calls per resource (soft-delete filtering lives here)
+├── serializers/    # resource-specific response shaping (one file per resource)
 ├── middlewares/    # auth, validate, error, notFound, requestLogger
 ├── validations/    # Joi schemas per resource
 ├── swagger/        # OpenAPI route docs — one *.swagger.ts file per route module
-├── helpers/        # reusable domain logic (password, jwt, progress, user)
-├── utils/          # generic stateless utilities (logger, response, pagination, collection)
+├── helpers/        # reusable domain logic (password, jwt, progress)
+├── utils/          # generic, domain-agnostic utilities (logger, response, pagination, collection, number)
 ├── types/          # TS DTOs/interfaces (*.types.ts) + shared types + Express augmentation
 ├── app.ts          # Express app assembly
 └── server.ts       # bootstrap: DB connect + listen + graceful shutdown
@@ -79,9 +81,21 @@ prisma/
 ├── migrations/
 └── seed.ts
 tests/
-├── unit/           # mirrors src/ 1:1 (helpers/, utils/, services/, …)
+├── unit/           # mirrors src/ 1:1 (helpers/, utils/, services/, serializers/, …)
 └── integration/    # API-level tests organised by route module
 ```
+
+**Constants vs. serializers vs. utils**
+
+- `constants/` — every cross-cutting magic value (HTTP status codes, page sizes,
+  JWT expiry, bcrypt rounds, completion threshold, bearer scheme). Each constant is
+  a typed, frozen (`as const`) object exposed by a named export.
+- `serializers/` — functions that know a **specific resource's shape** and produce
+  its response DTO (e.g. `toSafeUser`, `toCourseProgress`). Services never build
+  response shapes inline; they call a serializer.
+- `utils/` — **generic, reusable-for-any-type** helpers (`groupBy`, `roundTo`,
+  pagination). If a function references `User`/`Course`/etc. it belongs in
+  `serializers/`; if it works for any type it stays in `utils/`.
 
 ---
 
@@ -108,7 +122,7 @@ cp .env.example .env
 ### 3. Set up the database
 
 ```bash
-# create the schema (runs the committed migration)
+# create the schema — applies the single baseline migration in one step
 npm run prisma:deploy        # or: npm run prisma:migrate  (dev, creates new migrations)
 
 # generate the Prisma client
@@ -117,6 +131,11 @@ npm run prisma:generate
 # seed an admin + demo data (optional)
 npm run db:seed
 ```
+
+The project ships a **single baseline migration** (`prisma/migrations/20260624000000_init`)
+that builds the entire schema — including `deleted_at` on every table — in one step.
+To wipe and rebuild a development database from scratch, use `npx prisma migrate reset`
+(drops the DB, re-applies the baseline migration, then runs the seed).
 
 ### 4. Run
 
@@ -386,7 +405,36 @@ erDiagram
   `video_progress (student_id, lesson_id)`.
 - **Indexes** on frequently queried fields: `users.role`, `users.email`,
   `lessons.course_id`, `enrollments.student_id`, `enrollments.course_id`,
-  `video_progress.student_id` / `lesson_id` / `course_id`.
+  `video_progress.student_id` / `lesson_id` / `course_id`, plus a `deleted_at`
+  index on every table (filtered on every read).
+
+### Soft delete
+
+Every table has a nullable `deleted_at`. **Deletions are soft only** — the
+repository sets `deleted_at = now()` instead of issuing a SQL `DELETE`, and every
+read filters `deletedAt: null` (including nested `include`s and `_count`s, so
+lesson lists and counts never include deleted rows).
+
+**Approach — manual filtering in the repository layer (chosen).** Prisma offers two
+native-ish options, both rejected here:
+
+1. **`$use` query middleware** — deprecated in Prisma 5 in favour of client
+   extensions, so building new code on it is a dead end.
+2. **`$extends` client extensions** — viable, but global query interception is a
+   footgun: it silently rewrites `findUnique`→`findFirst`, doesn't reliably filter
+   nested relation reads/`_count`, and has to be bypassed for any "include deleted"
+   path (restore, audits), which spreads conditional logic anyway.
+
+Since the repository is already the *single* place queries are issued, filtering
+there is explicit, visible at the call site, correctly handles nested
+`include`/`_count`, and is trivially unit-testable — with none of the global-hook
+surprises. The cost is discipline (each new query must add the filter), which the
+layered architecture already enforces by funnelling all Prisma access through
+repositories.
+
+> Note: the `users.email` unique constraint still spans soft-deleted rows, so an
+> email belonging to a soft-deleted user cannot be reused; this surfaces as a clean
+> `409 Conflict`. Left as-is to avoid a behavioural change.
 
 ---
 
@@ -407,6 +455,11 @@ erDiagram
 - **API docs live beside the code they describe.** Route documentation is split into
   one `*.swagger.ts` file per route module under `swagger/`; `swagger/index.ts` holds
   the base spec (info, servers, security) and merges the modules into the served document.
+- **No magic values.** Every cross-cutting literal lives in `constants/` as a typed,
+  `as const` object; modules import the constant instead of repeating the value.
+- **Response shaping is isolated in serializers.** Services compute data and hand it to
+  a resource-specific serializer that builds the response DTO, so the wire shape has one
+  home per resource. Generic, type-agnostic helpers (`groupBy`, `roundTo`) stay in `utils/`.
 - **Centralised error handling.** Services throw a typed `ApiError`; one middleware
   translates `ApiError`, Prisma errors (`P2002` → 409, `P2025` → 404, `P2003` → 400)
   and unknowns into the consistent error envelope. Production hides internal messages.

@@ -1,14 +1,17 @@
 import { Course, Prisma } from '@prisma/client';
 import { prisma } from '../config/db';
 
+const notDeleted = { deletedAt: null };
+
 function buildSearchFilter(search?: string): Prisma.CourseWhereInput {
-  if (!search) return {};
-  return {
-    OR: [
+  const where: Prisma.CourseWhereInput = { ...notDeleted };
+  if (search) {
+    where.OR = [
       { title: { contains: search, mode: 'insensitive' } },
       { description: { contains: search, mode: 'insensitive' } },
-    ],
-  };
+    ];
+  }
+  return where;
 }
 
 function create(data: Prisma.CourseCreateInput): Promise<Course> {
@@ -16,13 +19,13 @@ function create(data: Prisma.CourseCreateInput): Promise<Course> {
 }
 
 function findById(id: string): Promise<Course | null> {
-  return prisma.course.findUnique({ where: { id } });
+  return prisma.course.findFirst({ where: { id, ...notDeleted } });
 }
 
 function findByIdWithLessons(id: string) {
-  return prisma.course.findUnique({
-    where: { id },
-    include: { lessons: { orderBy: { sortOrder: 'asc' } } },
+  return prisma.course.findFirst({
+    where: { id, ...notDeleted },
+    include: { lessons: { where: notDeleted, orderBy: { sortOrder: 'asc' } } },
   });
 }
 
@@ -31,15 +34,15 @@ function update(id: string, data: Prisma.CourseUpdateInput): Promise<Course> {
 }
 
 function remove(id: string): Promise<Course> {
-  return prisma.course.delete({ where: { id } });
+  return prisma.course.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
 function findManyWithLessons(skip: number, take: number, search?: string) {
   return prisma.course.findMany({
     where: buildSearchFilter(search),
     include: {
-      lessons: { orderBy: { sortOrder: 'asc' } },
-      _count: { select: { lessons: true } },
+      lessons: { where: notDeleted, orderBy: { sortOrder: 'asc' } },
+      _count: { select: { lessons: { where: notDeleted } } },
     },
     orderBy: { createdAt: 'desc' },
     skip,
@@ -52,7 +55,7 @@ function count(search?: string): Promise<number> {
 }
 
 function countLessons(courseId: string): Promise<number> {
-  return prisma.lesson.count({ where: { courseId } });
+  return prisma.lesson.count({ where: { courseId, ...notDeleted } });
 }
 
 export {

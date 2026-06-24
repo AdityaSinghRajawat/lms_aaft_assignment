@@ -3,6 +3,7 @@ import { createApp } from './app';
 import { env } from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/db';
 import { logger } from './utils/logger';
+import { APP } from './constants/app.constants';
 
 /**
  * Application entry point — connects the database, starts the HTTP server
@@ -27,8 +28,8 @@ function setupGracefulShutdown(server: Server): void {
       await disconnectDatabase();
       process.exit(0);
     });
-    // Force-exit if shutdown hangs.
-    setTimeout(() => process.exit(1), 10_000).unref();
+    // Force-exit if graceful shutdown hangs.
+    setTimeout(() => process.exit(1), APP.SHUTDOWN_TIMEOUT_MS).unref();
   };
 
   process.on('SIGTERM', () => void shutdown('SIGTERM'));

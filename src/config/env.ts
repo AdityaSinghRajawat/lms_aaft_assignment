@@ -1,14 +1,13 @@
 import dotenv from 'dotenv';
 import Joi from 'joi';
+import { APP, NODE_ENVS, NodeEnv } from '../constants/app.constants';
+import { JWT } from '../constants/jwt.constants';
+import { BCRYPT } from '../constants/security.constants';
 
 dotenv.config();
 
-/**
- * Strongly-typed, validated application environment.
- * Fails fast at boot if a required variable is missing or malformed.
- */
 export interface AppEnv {
-  nodeEnv: 'development' | 'test' | 'production';
+  nodeEnv: NodeEnv;
   port: number;
   apiPrefix: string;
   databaseUrl: string;
@@ -18,13 +17,17 @@ export interface AppEnv {
 }
 
 const envSchema = Joi.object({
-  NODE_ENV: Joi.string().valid('development', 'test', 'production').default('development'),
-  PORT: Joi.number().port().default(3000),
-  API_PREFIX: Joi.string().default('/api'),
+  NODE_ENV: Joi.string().valid(...NODE_ENVS).default('development'),
+  PORT: Joi.number().port().default(APP.DEFAULT_PORT),
+  API_PREFIX: Joi.string().default(APP.DEFAULT_API_PREFIX),
   DATABASE_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).required(),
   JWT_SECRET: Joi.string().min(10).required(),
-  JWT_EXPIRES_IN: Joi.string().default('1d'),
-  BCRYPT_SALT_ROUNDS: Joi.number().integer().min(4).max(15).default(10),
+  JWT_EXPIRES_IN: Joi.string().default(JWT.DEFAULT_EXPIRES_IN),
+  BCRYPT_SALT_ROUNDS: Joi.number()
+    .integer()
+    .min(BCRYPT.MIN_SALT_ROUNDS)
+    .max(BCRYPT.MAX_SALT_ROUNDS)
+    .default(BCRYPT.DEFAULT_SALT_ROUNDS),
 })
   .unknown(true)
   .prefs({ abortEarly: false });

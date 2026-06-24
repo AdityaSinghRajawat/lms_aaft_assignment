@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { paginationQuerySchema } from './common.validation';
 
 export const createCourseSchema = Joi.object({
   title: Joi.string().trim().min(2).max(200).required(),
@@ -14,8 +15,6 @@ export const updateCourseSchema = Joi.object({
   .min(1)
   .messages({ 'object.min': 'At least one field must be provided to update' });
 
-export const listCoursesQuerySchema = Joi.object({
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+export const listCoursesQuerySchema = paginationQuerySchema.keys({
   search: Joi.string().trim().max(200).allow('').optional(),
 });
