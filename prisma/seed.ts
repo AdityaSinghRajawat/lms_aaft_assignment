@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 
 const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS ?? BCRYPT.DEFAULT_SALT_ROUNDS);
 const ADMIN_NAME = process.env.SEED_ADMIN_NAME ?? 'Super Admin';
-const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'admin@lms.test';
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@123';
 
 async function main(): Promise<void> {
@@ -25,9 +25,9 @@ async function main(): Promise<void> {
   // ── Demo student ───────────────────────────────────────────────────────────
   const studentHash = await bcrypt.hash('Student@123', SALT_ROUNDS);
   const student = await prisma.user.upsert({
-    where: { email: 'jane@student.test' },
+    where: { email: 'jane@example.com' },
     update: {},
-    create: { name: 'Jane Doe', email: 'jane@student.test', password: studentHash, role: Role.STUDENT },
+    create: { name: 'Jane Doe', email: 'jane@example.com', password: studentHash, role: Role.STUDENT },
   });
   console.log(`✅ Student ready: ${student.email} (password: Student@123)`);
 

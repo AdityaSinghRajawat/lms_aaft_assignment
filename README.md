@@ -156,9 +156,25 @@ docker compose up --build
 
 ### Tests
 
+Tests are split into two suites:
+
 ```bash
-npm test
+# Unit tests — mock the DB, bcrypt and JWT; run anywhere, no services needed
+npm test                 # alias: npm run test:unit
+npm run test:coverage    # unit tests with a coverage report
+
+# Integration tests — full request→response flow against a real Postgres
+docker compose up -d db
+TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/mini_lms_test \
+  npm run test:integration
 ```
+
+- `tests/unit/**` mirrors `src/**` one-to-one (services, repositories, serializers,
+  helpers, utils). External dependencies are mocked, so no database is required.
+- `tests/integration/**` is organised by route module (auth, students, courses,
+  lessons, enrollments, progress, reports). A `globalSetup` applies the migration to
+  the test database and each test truncates tables beforehand so state never leaks.
+  Set `TEST_DATABASE_URL` (or `DATABASE_URL`) to a disposable Postgres database.
 
 ---
 
@@ -307,13 +323,13 @@ Base path: `/api`. 🔓 = public · 🔑A = admin JWT · 🔑S = student JWT
 # 1. Admin login
 curl -X POST http://localhost:3000/api/auth/admin/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@lms.test","password":"Admin@123"}'
+  -d '{"email":"admin@example.com","password":"Admin@123"}'
 
 # 2. Create a student (use the token from step 1)
 curl -X POST http://localhost:3000/api/admin/students \
   -H 'Authorization: Bearer <ADMIN_TOKEN>' \
   -H 'Content-Type: application/json' \
-  -d '{"name":"Jane Doe","email":"jane@student.test","password":"Student@123"}'
+  -d '{"name":"Jane Doe","email":"jane@example.com","password":"Student@123"}'
 
 # 3. Student updates video progress
 curl -X POST http://localhost:3000/api/student/progress \
@@ -495,6 +511,8 @@ repositories.
 | `npm run prisma:studio`   | Open Prisma Studio                            |
 | `npm run db:seed`         | Seed admin + demo data                        |
 | `npm test`                | Run Jest unit tests                           |
+| `npm run test:coverage`   | Unit tests with coverage report               |
+| `npm run test:integration`| Run integration tests (requires Postgres)     |
 
 ---
 

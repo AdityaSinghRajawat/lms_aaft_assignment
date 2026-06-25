@@ -9,7 +9,7 @@ const studentsSwagger: SwaggerModule = {
       required: ['name', 'email', 'password'],
       properties: {
         name: { type: 'string', example: 'Jane Doe' },
-        email: { type: 'string', format: 'email', example: 'jane@student.test' },
+        email: { type: 'string', format: 'email', example: 'jane@example.com' },
         password: { type: 'string', minLength: 8, example: 'Student@123' },
       },
     },

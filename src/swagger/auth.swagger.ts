@@ -21,7 +21,7 @@ const authSwagger: SwaggerModule = {
       type: 'object',
       required: ['email', 'password'],
       properties: {
-        email: { type: 'string', format: 'email', example: 'admin@lms.test' },
+        email: { type: 'string', format: 'email', example: 'admin@example.com' },
         password: { type: 'string', example: 'Admin@123' },
       },
     },
