@@ -70,6 +70,18 @@ describe('progress.service', () => {
       expect(upsert.mock.calls[0][3].completed).toBe(true);
     });
 
+    it('keeps completion sticky — a later low percentage does not un-complete', async () => {
+      findByStudentAndLesson.mockResolvedValue(
+        buildVideoProgress({ completed: true, completedAt: new Date('2026-01-01') }),
+      );
+
+      await updateProgress('user-1', { ...baseInput, percentage: 5 });
+
+      const [, , , data] = upsert.mock.calls[0];
+      expect(data.completed).toBe(true);
+      expect(data.completedAt).toEqual(new Date('2026-01-01'));
+    });
+
     it('accumulates watch time onto the existing record', async () => {
       findByStudentAndLesson.mockResolvedValue(buildVideoProgress({ timeSpentSeconds: 100 }));
 

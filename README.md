@@ -17,8 +17,9 @@ role-based access control, relational data modelling and progress analytics.
 | ORM         | Prisma                    |
 | Validation  | Joi                       |
 | Auth        | JWT + bcrypt (bcryptjs)   |
+| Hardening   | helmet, CORS, rate-limit, compression |
 | Docs        | Swagger (OpenAPI 3) UI    |
-| Tests       | Jest + ts-jest            |
+| Tests       | Jest + ts-jest + supertest |
 | Container   | Docker + docker-compose   |
 
 ---
@@ -68,7 +69,7 @@ src/
 ├── services/       # business logic per resource
 ├── repositories/   # Prisma DB calls per resource (soft-delete filtering lives here)
 ├── serializers/    # resource-specific response shaping (one file per resource)
-├── middlewares/    # auth, validate, error, notFound, requestLogger
+├── middlewares/    # auth, validate, error, notFound, requestLogger, rateLimit
 ├── validations/    # Joi schemas per resource
 ├── swagger/        # OpenAPI route docs — one *.swagger.ts file per route module
 ├── helpers/        # reusable domain logic (password, jwt, progress)
@@ -245,7 +246,9 @@ Every endpoint returns a consistent envelope.
 | 403    | Authenticated but not authorised         |
 | 404    | Resource not found                       |
 | 409    | Conflict (duplicate email / enrollment)  |
+| 429    | Too many requests (rate limit)           |
 | 500    | Unexpected server error                  |
+| 503    | Not ready / draining (readiness probe)   |
 
 All list endpoints accept `?page=` and `?limit=` (max 100) and return `meta`.
 
@@ -281,7 +284,7 @@ Base path: `/api`. 🔓 = public · 🔑A = admin JWT · 🔑S = student JWT
 | GET    | `/admin/courses`                                  | 🔑A    | List courses **with lessons** (paginated) |
 | GET    | `/admin/courses/:courseId`                        | 🔑A    | Get a course with lessons            |
 | PUT    | `/admin/courses/:courseId`                        | 🔑A    | Update a course                      |
-| DELETE | `/admin/courses/:courseId`                        | 🔑A    | Delete a course (cascades lessons)   |
+| DELETE | `/admin/courses/:courseId`                        | 🔑A    | Soft-delete a course (its lessons become unreachable) |
 | POST   | `/admin/courses/:courseId/lessons`                | 🔑A    | Add a lesson to a course             |
 | GET    | `/admin/courses/:courseId/lessons`                | 🔑A    | List a course's lessons              |
 | GET    | `/admin/courses/:courseId/lessons/:lessonId`      | 🔑A    | Get a lesson                         |
@@ -314,6 +317,13 @@ Base path: `/api`. 🔓 = public · 🔑A = admin JWT · 🔑S = student JWT
 | POST   | `/student/progress`                               | 🔑S    | Update video progress (auto-completes at 90%)     |
 | GET    | `/student/progress/:lessonId`                     | 🔑S    | Progress for a specific video                     |
 
+### Operational (unprefixed — for orchestrators/load balancers)
+
+| Method | Path       | Access | Description                                              |
+| ------ | ---------- | ------ | -------------------------------------------------------- |
+| GET    | `/health`  | 🔓     | Liveness — process is up (no dependency checks)          |
+| GET    | `/ready`   | 🔓     | Readiness — 200 when DB reachable, 503 while draining/down |
+
 > An interactive, always-current version of this reference is served at
 > **`/api/docs`** (Swagger UI) and **`/api/docs.json`** (raw OpenAPI).
 
@@ -343,7 +353,8 @@ curl -X POST http://localhost:3000/api/student/progress \
 ## Database Schema
 
 Five tables: `users` (admins + students via a `role` enum), `courses`, `lessons`,
-`enrollments`, `video_progress`. All tables carry `created_at` / `updated_at`.
+`enrollments`, `video_progress`. Every table carries `created_at`, `updated_at`
+and a nullable `deleted_at` (soft delete).
 
 ### ER Diagram
 
@@ -366,6 +377,7 @@ erDiagram
         boolean  isActive
         datetime created_at
         datetime updated_at
+        datetime deleted_at "nullable — soft delete"
     }
 
     COURSES {
@@ -375,6 +387,7 @@ erDiagram
         boolean  is_published
         datetime created_at
         datetime updated_at
+        datetime deleted_at "nullable — soft delete"
     }
 
     LESSONS {
@@ -387,6 +400,7 @@ erDiagram
         int      sort_order
         datetime created_at
         datetime updated_at
+        datetime deleted_at "nullable — soft delete"
     }
 
     ENROLLMENTS {
@@ -396,6 +410,7 @@ erDiagram
         string   assigned_by_id FK "admin, nullable"
         datetime created_at
         datetime updated_at
+        datetime deleted_at "nullable — soft delete"
     }
 
     VIDEO_PROGRESS {
@@ -410,8 +425,11 @@ erDiagram
         datetime completed_at
         datetime created_at
         datetime updated_at
+        datetime deleted_at "nullable — soft delete"
     }
 ```
+
+Index on `deleted_at` for every table (soft-delete filter runs on every read).
 
 ### Constraints & indexes
 
@@ -429,7 +447,10 @@ erDiagram
 Every table has a nullable `deleted_at`. **Deletions are soft only** — the
 repository sets `deleted_at = now()` instead of issuing a SQL `DELETE`, and every
 read filters `deletedAt: null` (including nested `include`s and `_count`s, so
-lesson lists and counts never include deleted rows).
+lesson lists and counts never include deleted rows). Progress aggregation also
+ignores rows whose lesson has been removed, so completion never exceeds the live
+lesson count. Video-progress completion is **sticky** — once a lesson hits 90% it
+stays complete even if the learner later scrubs back.
 
 **Approach — manual filtering in the repository layer (chosen).** Prisma offers two
 native-ish options, both rejected here:
@@ -495,6 +516,11 @@ repositories.
   credentials" message to avoid user enumeration.
 - **bcryptjs** is used as the bcrypt implementation — a pure-JS, API-compatible port —
   to keep installs/builds free of native compilation across environments.
+- **Production hardening.** `helmet` (security headers), `cors`, `compression`, and an
+  API rate limiter (100 req / 15 min per IP, disabled under tests). `app.ts` exposes the
+  configured Express app only; `server.ts` owns `http.createServer`, keep-alive tuning,
+  liveness/readiness probes, and graceful shutdown (drain connections → close the Prisma
+  pool → exit) on `SIGTERM`/`SIGINT`/`uncaughtException`/`unhandledRejection`.
 
 ---
 

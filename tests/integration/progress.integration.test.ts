@@ -43,6 +43,21 @@ describe('Student · Progress + course access routes', () => {
       expect(res.body.data.completedAt).not.toBeNull();
     });
 
+    it('should keep completion sticky once a lesson reaches 90%', async () => {
+      const { token, lesson } = await seedStudentWithCourse();
+      const post = (percentage: number) =>
+        request(app)
+          .post('/api/student/progress')
+          .set('Authorization', bearer(token))
+          .send({ lessonId: lesson.id, lastPositionSeconds: 10, percentage });
+
+      await post(95); // completes
+      const res = await post(20); // student scrubs back
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.completed).toBe(true);
+    });
+
     it('should return 403 when the student is not enrolled in the lesson course', async () => {
       const { token, otherLesson } = await seedStudentWithCourse();
 

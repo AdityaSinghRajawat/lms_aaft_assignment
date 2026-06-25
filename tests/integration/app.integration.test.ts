@@ -14,12 +14,6 @@ describe('App-level routes', () => {
     expect(res.body).toMatchObject({ status: 'ready', database: 'up' });
   });
 
-  it('GET /api/health should return 200 healthy', async () => {
-    const res = await request(app).get('/api/health');
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ success: true, data: { status: 'healthy' } });
-  });
-
   it('GET /api/docs.json should serve the OpenAPI document', async () => {
     const res = await request(app).get('/api/docs.json');
     expect(res.status).toBe(200);

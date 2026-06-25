@@ -1,10 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import { isProduction } from './env';
 import { logger } from '../utils/logger';
 
 // One shared client per process — multiple instances would exhaust DB connections.
 export const prisma = new PrismaClient({
-  log: isProduction ? ['warn', 'error'] : ['warn', 'error'],
+  log: ['warn', 'error'],
 });
 
 export async function connectDatabase(): Promise<void> {

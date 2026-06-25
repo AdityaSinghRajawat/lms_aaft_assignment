@@ -34,16 +34,20 @@ function upsert(
   });
 }
 
+// Aggregation reads exclude progress whose lesson has been soft-deleted, so a
+// removed lesson can't push completedLessons above the live lesson count.
 function findManyByStudentAndCourse(studentId: string, courseId: string): Promise<VideoProgress[]> {
-  return prisma.videoProgress.findMany({ where: { studentId, courseId, ...notDeleted } });
+  return prisma.videoProgress.findMany({
+    where: { studentId, courseId, ...notDeleted, lesson: notDeleted },
+  });
 }
 
 function findManyByStudent(studentId: string): Promise<VideoProgress[]> {
-  return prisma.videoProgress.findMany({ where: { studentId, ...notDeleted } });
+  return prisma.videoProgress.findMany({ where: { studentId, ...notDeleted, lesson: notDeleted } });
 }
 
 function findManyByCourse(courseId: string): Promise<VideoProgress[]> {
-  return prisma.videoProgress.findMany({ where: { courseId, ...notDeleted } });
+  return prisma.videoProgress.findMany({ where: { courseId, ...notDeleted, lesson: notDeleted } });
 }
 
 export {

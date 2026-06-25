@@ -19,27 +19,27 @@ describe('videoProgress.repository (soft-delete aware)', () => {
     });
   });
 
-  it('findManyByStudentAndCourse filters by student, course and deletedAt', async () => {
+  it('findManyByStudentAndCourse filters by student, course, deletedAt and a live lesson', async () => {
     db.videoProgress.findMany.mockResolvedValue([]);
     await videoProgressRepository.findManyByStudentAndCourse('user-1', 'course-1');
     expect(db.videoProgress.findMany).toHaveBeenCalledWith({
-      where: { studentId: 'user-1', courseId: 'course-1', deletedAt: null },
+      where: { studentId: 'user-1', courseId: 'course-1', deletedAt: null, lesson: { deletedAt: null } },
     });
   });
 
-  it('findManyByStudent filters by student and deletedAt', async () => {
+  it('findManyByStudent filters by student, deletedAt and a live lesson', async () => {
     db.videoProgress.findMany.mockResolvedValue([]);
     await videoProgressRepository.findManyByStudent('user-1');
     expect(db.videoProgress.findMany).toHaveBeenCalledWith({
-      where: { studentId: 'user-1', deletedAt: null },
+      where: { studentId: 'user-1', deletedAt: null, lesson: { deletedAt: null } },
     });
   });
 
-  it('findManyByCourse filters by course and deletedAt', async () => {
+  it('findManyByCourse filters by course, deletedAt and a live lesson', async () => {
     db.videoProgress.findMany.mockResolvedValue([]);
     await videoProgressRepository.findManyByCourse('course-1');
     expect(db.videoProgress.findMany).toHaveBeenCalledWith({
-      where: { courseId: 'course-1', deletedAt: null },
+      where: { courseId: 'course-1', deletedAt: null, lesson: { deletedAt: null } },
     });
   });
 

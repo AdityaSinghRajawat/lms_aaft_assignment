@@ -51,6 +51,43 @@ describe('Admin · Reports routes', () => {
       expect(res.body.data.courses).toHaveLength(1);
     });
 
+    it('should not count progress from a soft-deleted lesson (no >100%)', async () => {
+      const { token, user: admin } = await asAdmin();
+      const { user: student } = await seedUser(Role.STUDENT, { email: 'sd@example.com' });
+      const course = await createCourse();
+      const keep = await createLesson(course.id, { title: 'Keep' });
+      const removed = await createLesson(course.id, { title: 'Removed' });
+      await enroll(student.id, course.id, admin.id);
+      for (const lesson of [keep, removed]) {
+        await prisma.videoProgress.create({
+          data: {
+            studentId: student.id,
+            lessonId: lesson.id,
+            courseId: course.id,
+            percentage: 100,
+            completed: true,
+            timeSpentSeconds: 600,
+            lastPositionSeconds: 600,
+            completedAt: new Date(),
+          },
+        });
+      }
+      await request(app)
+        .delete(`/api/admin/courses/${course.id}/lessons/${removed.id}`)
+        .set('Authorization', bearer(token));
+
+      const res = await request(app)
+        .get(`/api/admin/reports/students/${student.id}/progress`)
+        .set('Authorization', bearer(token));
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.overall).toMatchObject({
+        totalLessons: 1,
+        completedLessons: 1,
+        completionPercentage: 100,
+      });
+    });
+
     it('should return 404 for a non-existent student', async () => {
       const { token } = await asAdmin();
       const res = await request(app)

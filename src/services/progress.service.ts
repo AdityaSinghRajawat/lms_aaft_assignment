@@ -15,9 +15,12 @@ async function updateProgress(studentId: string, input: UpsertProgressInput): Pr
   await enrollmentsService.assertEnrolled(studentId, lesson.courseId);
 
   const percentage = clampPercentage(input.percentage);
-  const completed = resolveCompletion(percentage, input.completed);
-
   const existing = await videoProgressRepository.findByStudentAndLesson(studentId, input.lessonId);
+
+  // Completion is sticky: once a lesson is complete it stays complete, even if the
+  // student later scrubs back and reports a lower percentage.
+  const completed = existing?.completed === true || resolveCompletion(percentage, input.completed);
+
   const timeSpentSeconds = (existing?.timeSpentSeconds ?? 0) + (input.timeSpentDeltaSeconds ?? 0);
 
   // Preserve the original completion timestamp; only stamp it on first completion.
