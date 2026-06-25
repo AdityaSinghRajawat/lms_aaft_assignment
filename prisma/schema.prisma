@@ -22,7 +22,6 @@ enum Role {
   STUDENT
 }
 
-// users (admins and students) ────────────────────────────────────────────────
 model User {
   id        String    @id @default(uuid())
   name      String
@@ -34,7 +33,6 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  // relations
   enrollments     Enrollment[]    @relation("StudentEnrollments")
   assignedCourses Enrollment[]    @relation("AssignedByAdmin")
   videoProgress   VideoProgress[]
@@ -45,7 +43,6 @@ model User {
   @@map("users")
 }
 
-// courses ─────────────────────────────────────────────────────────────────────
 model Course {
   id          String    @id @default(uuid())
   title       String
@@ -55,7 +52,6 @@ model Course {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  // relations
   lessons       Lesson[]
   enrollments   Enrollment[]
   videoProgress VideoProgress[]
@@ -65,7 +61,6 @@ model Course {
   @@map("courses")
 }
 
-// lessons (video lessons that belong to a course) ──────────────────────────────
 model Lesson {
   id          String    @id @default(uuid())
   courseId    String    @map("course_id")
@@ -78,7 +73,6 @@ model Lesson {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  // relations
   course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
   videoProgress VideoProgress[]
 
@@ -87,7 +81,6 @@ model Lesson {
   @@map("lessons")
 }
 
-// enrollments (course assignment of a student) ─────────────────────────────────
 model Enrollment {
   id           String    @id @default(uuid())
   studentId    String    @map("student_id")
@@ -97,7 +90,6 @@ model Enrollment {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  // relations
   student    User   @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
   course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   assignedBy User?  @relation("AssignedByAdmin", fields: [assignedById], references: [id], onDelete: SetNull)
@@ -109,7 +101,6 @@ model Enrollment {
   @@map("enrollments")
 }
 
-// video_progress (per student, per lesson) ─────────────────────────────────────
 model VideoProgress {
   id                  String    @id @default(uuid())
   studentId           String    @map("student_id")
@@ -124,7 +115,6 @@ model VideoProgress {
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  // relations
   student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)

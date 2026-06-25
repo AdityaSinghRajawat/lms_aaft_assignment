@@ -1,10 +1,5 @@
 import { HTTP_STATUS } from '../constants/http.constants';
 
-/**
- * Operational application error carrying an HTTP status code.
- * Thrown by services/helpers and translated to a JSON response
- * by the central error middleware.
- */
 export class ApiError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;

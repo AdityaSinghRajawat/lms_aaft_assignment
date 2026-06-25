@@ -9,14 +9,10 @@ import {
   lessonParamsSchema,
 } from '../validations/lessons.validation';
 
-/**
- * Admin lesson routes, nested under /api/admin/courses/:courseId/lessons.
- * `mergeParams` exposes :courseId from the parent router.
- * Mounted behind the admin auth guard by the courses router.
- */
+// `mergeParams` exposes the parent router's :courseId. Auth is applied by the
+// parent courses router, so this router intentionally has no guard of its own.
 const router = Router({ mergeParams: true });
 
-// POST /api/admin/courses/:courseId/lessons
 router.post(
   '/',
   validate(courseIdParamSchema, 'params'),
@@ -24,21 +20,14 @@ router.post(
   asyncHandler(lessonsController.create),
 );
 
-// GET /api/admin/courses/:courseId/lessons
-router.get(
-  '/',
-  validate(courseIdParamSchema, 'params'),
-  asyncHandler(lessonsController.list),
-);
+router.get('/', validate(courseIdParamSchema, 'params'), asyncHandler(lessonsController.list));
 
-// GET /api/admin/courses/:courseId/lessons/:lessonId
 router.get(
   '/:lessonId',
   validate(lessonParamsSchema, 'params'),
   asyncHandler(lessonsController.getById),
 );
 
-// PUT /api/admin/courses/:courseId/lessons/:lessonId
 router.put(
   '/:lessonId',
   validate(lessonParamsSchema, 'params'),
@@ -46,7 +35,6 @@ router.put(
   asyncHandler(lessonsController.update),
 );
 
-// DELETE /api/admin/courses/:courseId/lessons/:lessonId
 router.delete(
   '/:lessonId',
   validate(lessonParamsSchema, 'params'),

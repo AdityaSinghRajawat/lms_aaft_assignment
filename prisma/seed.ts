@@ -13,7 +13,6 @@ const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@123';
 
 async function main(): Promise<void> {
-  // ── Admin ────────────────────────────────────────────────────────────────
   const adminHash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
   const admin = await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
@@ -22,7 +21,6 @@ async function main(): Promise<void> {
   });
   console.log(`✅ Admin ready: ${admin.email}`);
 
-  // ── Demo student ───────────────────────────────────────────────────────────
   const studentHash = await bcrypt.hash('Student@123', SALT_ROUNDS);
   const student = await prisma.user.upsert({
     where: { email: 'jane@example.com' },
@@ -31,7 +29,6 @@ async function main(): Promise<void> {
   });
   console.log(`✅ Student ready: ${student.email} (password: Student@123)`);
 
-  // ── Demo course + lessons ───────────────────────────────────────────────────
   const existingCourse = await prisma.course.findFirst({ where: { title: 'Intro to TypeScript' } });
   const course =
     existingCourse ??
@@ -50,7 +47,6 @@ async function main(): Promise<void> {
     }));
   console.log(`✅ Course ready: ${course.title}`);
 
-  // ── Demo enrollment ─────────────────────────────────────────────────────────
   await prisma.enrollment.upsert({
     where: { studentId_courseId: { studentId: student.id, courseId: course.id } },
     update: {},

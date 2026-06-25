@@ -6,10 +6,6 @@ import { logger } from '../utils/logger';
 import { isProduction } from '../config/env';
 import { HTTP_STATUS } from '../constants/http.constants';
 
-/**
- * Central error-handling middleware. Translates ApiError, Prisma errors and
- * unknown exceptions into the consistent error envelope.
- */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof ApiError) {

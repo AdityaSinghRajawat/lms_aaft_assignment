@@ -1,9 +1,5 @@
 /* eslint-disable no-console */
 
-/**
- * Minimal dependency-free structured logger.
- * Generic + stateless — holds no domain knowledge.
- */
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 function emit(level: LogLevel, message: string, meta?: unknown): void {

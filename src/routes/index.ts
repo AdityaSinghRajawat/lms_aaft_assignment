@@ -6,16 +6,6 @@ import enrollmentsRoutes from './enrollments.routes';
 import reportsRoutes from './reports.routes';
 import studentRoutes from './student.routes';
 
-/**
- * Root API router — composes every resource router under its base path.
- *
- *   /auth                 → admin & student login + profile
- *   /admin/students       → student management (admin)
- *   /admin/courses        → course + nested lesson management (admin)
- *   /admin/enrollments    → course assignment (admin)
- *   /admin/reports        → analytics (admin)
- *   /student              → student course access + video progress
- */
 const router = Router();
 
 router.get('/health', (_req: Request, res: Response) => {

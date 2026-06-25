@@ -2,11 +2,6 @@ import { NextFunction, Request, Response } from 'express';
 import { ObjectSchema } from 'joi';
 import { ApiError } from '../utils/apiError';
 
-/**
- * Joi request-validation middleware.
- * Validates and SANITISES (strips unknown keys, applies coercions/defaults)
- * the chosen request segment, writing the cleaned value back onto the request.
- */
 type RequestSegment = 'body' | 'query' | 'params';
 
 export function validate(schema: ObjectSchema, segment: RequestSegment = 'body') {

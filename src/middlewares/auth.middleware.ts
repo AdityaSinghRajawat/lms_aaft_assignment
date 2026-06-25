@@ -6,10 +6,6 @@ import { JWT } from '../constants/jwt.constants';
 
 const BEARER_PREFIX = `${JWT.BEARER_SCHEME} `;
 
-/**
- * Authentication middleware — verifies the Bearer JWT and attaches
- * the decoded payload to `req.user`.
- */
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
 
@@ -24,10 +20,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
   next();
 }
 
-/**
- * Authorization middleware factory — enforces role-based access control.
- * Must run after `authenticate`.
- */
+// Must run after `authenticate`, which populates `req.user`.
 export function authorize(...allowedRoles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) throw ApiError.unauthorized('Authentication required');
@@ -38,6 +31,5 @@ export function authorize(...allowedRoles: Role[]) {
   };
 }
 
-/** Convenience guards. */
 export const requireAdmin = authorize(Role.ADMIN);
 export const requireStudent = authorize(Role.STUDENT);

@@ -11,20 +11,11 @@ import {
 
 const router = Router();
 
-// Course assignment is admin-only.
 router.use(authenticate, requireAdmin);
 
-// POST /api/admin/enrollments
 router.post('/', validate(createEnrollmentSchema), asyncHandler(enrollmentsController.create));
+router.get('/', validate(listEnrollmentsQuerySchema, 'query'), asyncHandler(enrollmentsController.list));
 
-// GET /api/admin/enrollments?studentId=&courseId=
-router.get(
-  '/',
-  validate(listEnrollmentsQuerySchema, 'query'),
-  asyncHandler(enrollmentsController.list),
-);
-
-// DELETE /api/admin/enrollments/:enrollmentId
 router.delete(
   '/:enrollmentId',
   validate(enrollmentIdParamSchema, 'params'),
